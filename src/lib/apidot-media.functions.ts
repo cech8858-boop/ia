@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  extractMediaUrl,
   extractResultAudioUrl,
   extractResultImageUrl,
   extractTaskId,
@@ -18,6 +19,16 @@ export type NanoBananaOutput =
 export type ElevenLabsOutput =
   | { status: "processing"; generationId: string }
   | { status: "completed"; generationId: string; audioUrl: string }
+  | { status: "error"; message: string };
+
+export type ElevenLabsMusicOutput =
+  | { status: "processing"; generationId: string }
+  | { status: "completed"; generationId: string; audioUrl: string }
+  | { status: "error"; message: string };
+
+export type Tripo3dOutput =
+  | { status: "processing"; generationId: string }
+  | { status: "completed"; generationId: string; modelUrl: string }
   | { status: "error"; message: string };
 
 export const generateNanoBanana = createServerFn({ method: "POST" })
@@ -132,4 +143,84 @@ export const pollElevenLabs = createServerFn({ method: "POST" })
     }
 
     return { status: "processing", generationId: data.generationId };
+  });
+
+export const generateElevenLabsMusic = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { prompt: string }) => {
+    const prompt = input?.prompt?.trim();
+    if (!prompt) throw new Error("Please provide a music prompt.");
+    return { prompt };
+  })
+  .handler(async ({ data }): Promise<ElevenLabsMusicOutput> => {
+    const result = await submitGeneration("elevenlabs-music", { prompt: data.prompt });
+    if (!result.ok) {
+      return { status: "error", message: safeErrorMessage(result.body) ?? "ElevenLabs Music generation failed." };
+    }
+
+    const audioUrl = extractResultAudioUrl(result.body);
+    if (audioUrl) return { status: "completed", generationId: "elevenlabs-music", audioUrl };
+
+    const taskId = extractTaskId(result.body);
+    return taskId
+      ? { status: "processing", generationId: taskId }
+      : { status: "error", message: "ElevenLabs Music did not return a task id." };
+  });
+
+export const pollElevenLabsMusic = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { generationId: string }) => {
+    const id = input?.generationId?.trim();
+    if (!id) throw new Error("Missing generation id.");
+    return { generationId: id };
+  })
+  .handler(async ({ data }): Promise<ElevenLabsMusicOutput> => {
+    const result = await getTaskStatus(data.generationId);
+    if (!result.ok) {
+      return { status: "error", message: safeErrorMessage(result.body) ?? "ElevenLabs Music task failed." };
+    }
+    const audioUrl = extractResultAudioUrl(result.body);
+    return audioUrl
+      ? { status: "completed", generationId: data.generationId, audioUrl }
+      : { status: "processing", generationId: data.generationId };
+  });
+
+export const generateTripo3d = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { prompt: string }) => {
+    const prompt = input?.prompt?.trim();
+    if (!prompt) throw new Error("Please provide a 3D model prompt.");
+    return { prompt };
+  })
+  .handler(async ({ data }): Promise<Tripo3dOutput> => {
+    const result = await submitGeneration("tripo3d-h3.1-text-to-3d", { prompt: data.prompt });
+    if (!result.ok) {
+      return { status: "error", message: safeErrorMessage(result.body) ?? "Tripo3D generation failed." };
+    }
+
+    const modelUrl = extractMediaUrl(result.body, ["glb", "gltf", "obj", "fbx", "model", "3d"]);
+    if (modelUrl) return { status: "completed", generationId: "tripo3d-h3.1-text-to-3d", modelUrl };
+
+    const taskId = extractTaskId(result.body);
+    return taskId
+      ? { status: "processing", generationId: taskId }
+      : { status: "error", message: "Tripo3D did not return a task id." };
+  });
+
+export const pollTripo3d = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { generationId: string }) => {
+    const id = input?.generationId?.trim();
+    if (!id) throw new Error("Missing generation id.");
+    return { generationId: id };
+  })
+  .handler(async ({ data }): Promise<Tripo3dOutput> => {
+    const result = await getTaskStatus(data.generationId);
+    if (!result.ok) {
+      return { status: "error", message: safeErrorMessage(result.body) ?? "Tripo3D task failed." };
+    }
+    const modelUrl = extractMediaUrl(result.body, ["glb", "gltf", "obj", "fbx", "model", "3d"]);
+    return modelUrl
+      ? { status: "completed", generationId: data.generationId, modelUrl }
+      : { status: "processing", generationId: data.generationId };
   });
