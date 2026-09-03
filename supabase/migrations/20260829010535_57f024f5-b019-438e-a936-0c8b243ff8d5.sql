@@ -1,0 +1,2 @@
+CREATE POLICY "character_swap_public_upload" ON storage.objects FOR INSERT TO anon, authenticated WITH CHECK (bucket_id = 'character-swap');
+CREATE POLICY "character_swap_public_read" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id = 'character-swap');

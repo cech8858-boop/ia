@@ -1,0 +1,6 @@
+SUPABASE_PROJECT_ID="stzjhngofqicfvlxwlon"
+SUPABASE_PUBLISHABLE_KEY="sb_publishable_ncUyW2PWN5whRJ11FaUIkg_TmWKefdj"
+SUPABASE_URL="https://c--fde4508a-e429-4d1d-bfb0-d622f9ae5ea0-prod.lovable.cloud"
+VITE_SUPABASE_PROJECT_ID="stzjhngofqicfvlxwlon"
+VITE_SUPABASE_PUBLISHABLE_KEY="sb_publishable_ncUyW2PWN5whRJ11FaUIkg_TmWKefdj"
+VITE_SUPABASE_URL="https://c--fde4508a-e429-4d1d-bfb0-d622f9ae5ea0-prod.lovable.cloud"
