@@ -43,6 +43,7 @@ function Studio() {
   const [resolution, setResolution] = useState<Resolution>("480p");
   const [seconds, setSeconds] = useState<Duration>(3);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
+  const [selectedPlan, setSelectedPlan] = useState<"free" | "basic" | "premium">("basic");
 
   const runGeneration = useServerFn(generateTextToVideo);
   const pollGeneration = useServerFn(pollTextToVideo);
@@ -175,9 +176,50 @@ function Studio() {
           </form>
         </section>
 
-        <div className="mt-8">
-          <PayPalCheckout />
-        </div>
+        <section className="mt-8 rounded-2xl border border-border bg-card/80 p-5 backdrop-blur sm:p-7">
+          <div className="mb-6 text-center">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Pricing plan</p>
+            <h2 className="mt-2 text-2xl font-semibold">Accédez aux fonctionnalités Premium</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Choisissez votre formule avant de continuer vers PayPal Sandbox.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <PlanCard
+              name="Free"
+              amount="0 €"
+              description="Pour découvrir le studio"
+              selected={selectedPlan === "free"}
+              onSelect={() => setSelectedPlan("free")}
+              features={["Accès limité aux fonctionnalités", "Support standard"]}
+            />
+            <PlanCard
+              name="Basic"
+              amount="5 €"
+              description="Pour les petits projets"
+              selected={selectedPlan === "basic"}
+              onSelect={() => setSelectedPlan("basic")}
+              features={["Génération vidéo Wan 2.2", "Support prioritaire"]}
+            />
+            <PlanCard
+              name="Premium"
+              amount="10 €"
+              description="Pour un accès complet"
+              selected={selectedPlan === "premium"}
+              onSelect={() => setSelectedPlan("premium")}
+              features={["Toutes les fonctionnalités", "Support prioritaire"]}
+            />
+          </div>
+        </section>
+
+        {selectedPlan !== "free" && (
+          <div className="mt-8">
+            <PayPalCheckout
+              plan={selectedPlan}
+              amount={selectedPlan === "basic" ? 5 : 10}
+            />
+          </div>
+        )}
 
         <section className="mt-8">
           {isGenerating && (
@@ -312,5 +354,46 @@ function OptionGroup<T extends string | number>({
         ))}
       </div>
     </div>
+  );
+}
+
+function PlanCard({
+  name,
+  amount,
+  description,
+  features,
+  selected,
+  onSelect,
+}: {
+  name: string;
+  amount: string;
+  description: string;
+  features: string[];
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`rounded-2xl border p-5 text-left transition ${
+        selected
+          ? "border-primary bg-primary/10 shadow-[var(--shadow-glow)]"
+          : "border-border bg-background/40 hover:border-primary/60"
+      }`}
+      aria-pressed={selected}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-lg font-semibold">{name}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+        {selected && <span className="rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">Choisi</span>}
+      </div>
+      <p className="mt-6 text-3xl font-semibold">{amount}<span className="text-sm font-normal text-muted-foreground"> / mois</span></p>
+      <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+        {features.map((feature) => <li key={feature}>+ {feature}</li>)}
+      </ul>
+    </button>
   );
 }

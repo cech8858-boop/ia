@@ -79,7 +79,13 @@ function loadPayPalSdk(): Promise<void> {
   });
 }
 
-export function PayPalCheckout() {
+export function PayPalCheckout({
+  plan,
+  amount,
+}: {
+  plan: "basic" | "premium";
+  amount: number;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonsRef = useRef<PayPalButtons | null>(null);
   const [status, setStatus] = useState("Chargement de PayPal…");
@@ -103,7 +109,11 @@ export function PayPalCheckout() {
           createOrder: async () => {
             const url = `${API_BASE_URL}/paypal/create-order`;
             console.info("[PayPal] POST", url);
-            const response = await fetch(url, { method: "POST" });
+            const response = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ plan, amount, currency: "EUR" }),
+            });
             const body = await readApiResponse(response);
             console.info("[PayPal] response", response.status, body);
             if (!response.ok) throw new Error(apiError(response.status, body));
@@ -162,7 +172,7 @@ export function PayPalCheckout() {
     <section className="rounded-2xl border border-border bg-card/80 p-5 backdrop-blur sm:p-7">
       <div className="mb-4">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">PayPal Sandbox</p>
-        <h2 className="mt-1 text-xl font-semibold">Payer 10,00 €</h2>
+        <h2 className="mt-1 text-xl font-semibold">Payer {amount.toFixed(2).replace(".", ",")} €</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Le paiement est confirmé uniquement après capture réussie par le backend.
         </p>
