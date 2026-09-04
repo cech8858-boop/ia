@@ -151,6 +151,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      grant_paypal_credits: {
+        Args: { _credits: number; _paypal_order_id: string; _user_id: string }
+        Returns: number
+      }
       refund_credits: {
         Args: { _amount: number; _user_id: string }
         Returns: undefined

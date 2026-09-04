@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
@@ -129,7 +130,15 @@ export function PayPalCheckout({
           onApprove: async ({ orderID }) => {
             const url = `${API_BASE_URL}/paypal/capture-order/${encodeURIComponent(orderID)}`;
             console.info("[PayPal] POST", url);
-            const response = await fetch(url, { method: "POST" });
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+            if (!accessToken) {
+              throw new Error("Votre session a expiré. Reconnectez-vous avant de confirmer le paiement.");
+            }
+            const response = await fetch(url, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
             const body = await readApiResponse(response);
             console.info("[PayPal] response", response.status, body);
             if (!response.ok) throw new Error(apiError(response.status, body));
@@ -142,7 +151,11 @@ export function PayPalCheckout({
               throw new Error(`Capture non confirmée (statut PayPal : ${String(paypalStatus ?? "inconnu")}).`);
             }
             setSuccess(true);
-            setStatus("Paiement réussi");
+            const credits =
+              body && typeof body === "object" && typeof (body as Record<string, unknown>).credits_added === "number"
+                ? (body as Record<string, number>).credits_added
+                : null;
+            setStatus(credits ? `Paiement réussi — ${credits} crédits ajoutés à votre compte.` : "Paiement réussi");
           },
           onError: (error) => {
             console.error("[PayPal] SDK error", error);

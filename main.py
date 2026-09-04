@@ -1,7 +1,7 @@
 import os
 import requests
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -34,6 +34,9 @@ app.add_middleware(
 
 PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
 PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"
 
@@ -163,8 +166,8 @@ def create_order(request: CreateOrderRequest | None = None):
                     "currency_code": "EUR",
 
                     "value": plan_amounts[plan]
-
-                }
+                },
+                "custom_id": plan
             }
 
         ]
@@ -231,7 +234,7 @@ def create_order(request: CreateOrderRequest | None = None):
 # =========================================================
 
 @app.post("/paypal/capture-order/{order_id}")
-def capture_order(order_id: str):
+def capture_order(order_id: str, authorization: str | None = Header(default=None)):
 
     if not order_id:
 
@@ -242,6 +245,23 @@ def capture_order(order_id: str):
             detail="order_id manquant"
 
         )
+
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Session Supabase requise pour créditer le compte")
+    if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY or not SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(status_code=500, detail="Configuration Supabase manquante sur le backend")
+
+    user_response = requests.get(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={"apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": authorization},
+        timeout=30,
+    )
+    if user_response.status_code != 200:
+        raise HTTPException(status_code=401, detail="Session Supabase invalide ou expirée")
+    try:
+        user_id = user_response.json()["id"]
+    except (ValueError, KeyError):
+        raise HTTPException(status_code=401, detail="Identité Supabase invalide")
 
     token = get_paypal_access_token()
 
@@ -284,15 +304,37 @@ def capture_order(order_id: str):
         )
 
     try:
+        capture_data = response.json()
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Réponse PayPal invalide")
 
-        return response.json()
+    if capture_data.get("status") != "COMPLETED":
+        return capture_data
+    try:
+        amount = capture_data["purchase_units"][0]["payments"]["captures"][0]["amount"]["value"]
+    except (KeyError, IndexError, TypeError):
+        raise HTTPException(status_code=502, detail="Réponse PayPal incomplète après capture")
 
-    except Exception:
-
-        raise HTTPException(
-
-            status_code=500,
-
-            detail="Réponse PayPal invalide"
-
+    credits = {"5.00": 150, "10.00": 300}.get(str(amount))
+    if credits is None:
+        raise HTTPException(status_code=400, detail="Montant PayPal non reconnu pour l'attribution des crédits")
+    try:
+        grant_response = requests.post(
+            f"{SUPABASE_URL}/rest/v1/rpc/grant_paypal_credits",
+            headers={
+                "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={"_paypal_order_id": order_id, "_user_id": user_id, "_credits": credits},
+            timeout=30,
         )
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Impossible d'attribuer les crédits : {str(e)}")
+    if grant_response.status_code != 200:
+        raise HTTPException(status_code=502, detail="Capture PayPal réussie mais attribution des crédits impossible")
+    try:
+        added_credits = grant_response.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Réponse Supabase invalide lors de l'attribution des crédits")
+    return {**capture_data, "credits_added": added_credits}

@@ -123,7 +123,7 @@ function RootComponent() {
       <nav className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 sm:px-6">
         <div className="mx-auto flex max-w-md items-center justify-around rounded-[2rem] border border-violet-300/25 bg-[linear-gradient(135deg,oklch(0.25_0.09_285/0.94),oklch(0.13_0.06_275/0.97))] px-3 py-2 shadow-[0_18px_50px_-18px_oklch(0.12_0.12_285/0.9)] backdrop-blur-xl">
           <NavLink to="/" label="Home" icon={<Home className="size-5" />} />
-          <NavLink to="/blank" label="" icon={<Sparkles className="size-5" />} ariaLabel="Section vide" />
+          <NavLink to="/blank" label="" icon={<Sparkles className="size-5" />} ariaLabel="Outils IA" />
           <NavLink to="/account" label="Compte" icon={<User className="size-5" />} />
           <NavLink to="/payments" label="Paiements" icon={<CreditCard className="size-5" />} />
         </div>
