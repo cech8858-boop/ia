@@ -260,63 +260,81 @@ function AiVideoGenerator() {
   }
 
   return (
-    <main
-      className="min-h-screen bg-background text-foreground"
-      style={{ backgroundImage: "var(--gradient-studio)" }}
-    >
-      <div className="mx-auto w-full max-w-5xl px-5 py-12 sm:py-16">
-        <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <span className="inline-flex items-center rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-              APIDot · Kling · Veo · Sora
-            </span>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-5xl">
-              AI Video Generator
-            </h1>
+    <main className="min-h-screen bg-[#101010] text-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-4 pb-28 sm:px-8">
+        <header className="sticky top-0 z-10 -mx-4 mb-2 flex items-center justify-between border-b border-white/5 bg-[#1c1c1c]/95 px-4 py-3 backdrop-blur sm:-mx-8 sm:px-8">
+          <div className="flex items-center gap-2 text-lg font-bold tracking-tight">
+            <span className="flex size-7 items-center justify-center rounded-md border-2 border-white text-xs">R</span>
+            Remakeit
           </div>
-          <div className="rounded-xl border border-border bg-card/70 px-4 py-3 text-right">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Crédits</p>
-            <p className="text-xl font-semibold text-primary">{balance}</p>
+          <div className="flex items-center gap-4">
+            <span className="rounded-full bg-gradient-to-r from-[#7546ff] to-[#ad3bff] px-4 py-1.5 text-xs font-semibold">Upgrade</span>
+            <span className="text-xl text-white/70">☰</span>
           </div>
         </header>
 
+        <div className="flex items-center gap-2 py-5 text-sm text-white/55">
+          <span className="text-xl">←</span>
+          <span>Modèles</span>
+        </div>
+
+        <section className="flex min-h-[270px] flex-1 items-center justify-center pb-4">
+          {videoUrl ? (
+            <video src={videoUrl} controls playsInline className="max-h-[360px] w-full rounded-2xl bg-black" />
+          ) : (
+            <div className="text-center text-white/35">
+              <div className="mx-auto mb-5 flex size-12 items-center justify-center rounded-xl border-4 border-white/10 text-2xl">▶</div>
+              <p className="text-sm">Aucune vidéo, commencez à générer !</p>
+            </div>
+          )}
+        </section>
+
         <section
-          className="rounded-2xl border border-border bg-card/80 p-5 backdrop-blur sm:p-7"
-          style={{ boxShadow: "var(--shadow-panel)" }}
+          className="rounded-[1.6rem] bg-[#101010] pt-2"
         >
           <form
-            className="space-y-6"
+            className="space-y-2"
             onSubmit={(event) => {
               event.preventDefault();
               if (busy || !selected || notEnoughCredits || !prompt.trim()) return;
               mutation.mutate();
             }}
           >
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="relative">
+              <textarea
+                id="prompt"
+                rows={4}
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder="Décrivez la vidéo que vous souhaitez créer..."
+                className="w-full resize-none rounded-[1.7rem] border border-white/10 bg-[#242424] px-5 py-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-violet-500"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <Choices
-                label="Model"
+                label=""
                 options={families}
                 value={family}
                 onChange={setFamily}
                 render={(f) => FAMILY_LABELS[f] ?? f}
               />
-              <Choices
-                label="Generation Mode"
-                options={availableModes}
-                value={mode}
-                onChange={setMode}
-                render={(m) => MODE_LABELS[m]}
-              />
+              <div className="flex rounded-full bg-[#292929] p-1">
+                {["16:9", "9:16"].map((ratio) => (
+                  <button key={ratio} type="button" onClick={() => setAspectRatio(ratio)} className={`rounded-full px-4 py-2 text-xs ${aspectRatio === ratio ? "bg-[#555] text-white" : "text-white/45"}`}>
+                    {ratio}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {mode === "image_to_video" && (
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Upload Image</p>
+              <div className="relative space-y-3 rounded-[1.7rem] border-2 border-dashed border-white/30 px-5 py-5 text-center">
+                <p className="absolute right-4 top-3 text-[10px] text-white/45">Optionnel</p>
                 <input
                   type="file"
                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                   onChange={(event) => onPickImage(event.target.files?.[0] ?? null)}
-                  className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-lg file:border-0 file:bg-secondary file:px-4 file:py-2 file:text-sm file:font-medium file:text-secondary-foreground"
+                  className="mx-auto block w-full text-center text-xs text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-transparent file:px-2 file:py-2 file:text-xs file:font-semibold file:text-white"
                 />
                 {imagePreview && (
                   <img
@@ -328,21 +346,7 @@ function AiVideoGenerator() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <label htmlFor="prompt" className="text-sm font-medium">
-                Prompt
-              </label>
-              <textarea
-                id="prompt"
-                rows={4}
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder="A cinematic tracking shot through a neon-lit street at night"
-                className="w-full resize-y rounded-xl border border-input bg-background/60 px-4 py-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
-              />
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-3">
+            <div className="hidden">
               {durations.length > 1 && (
                 <Choices
                   label="Durée"
@@ -370,13 +374,10 @@ function AiVideoGenerator() {
               )}
             </div>
 
-            <div className="flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between gap-3 pt-2">
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Coût estimé
-                </p>
-                <p className="text-2xl font-semibold text-primary">{cost} crédits</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-2xl font-bold">{cost} <span className="text-sm font-normal text-white/60">crédits</span></p>
+                <p className="text-[10px] text-white/50">
                   {selected ? `${selected.label} · ${selected.duration}s` : "Configuration indisponible"}
                   {notEnoughCredits ? " — crédits insuffisants" : ""}
                 </p>
@@ -384,10 +385,9 @@ function AiVideoGenerator() {
               <button
                 type="submit"
                 disabled={busy || !selected || notEnoughCredits || !prompt.trim()}
-                className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                style={{ boxShadow: "var(--shadow-glow)" }}
+                className="inline-flex min-w-[62%] items-center justify-center rounded-full bg-gradient-to-r from-[#6642ef] to-[#1389ff] px-6 py-3 text-lg font-bold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busy ? "Generating..." : "Generate Video"}
+                {busy ? "Génération..." : "Générer  ⚡"}
               </button>
             </div>
           </form>
