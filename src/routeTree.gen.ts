@@ -10,19 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AiImageRouteImport } from './routes/ai-image'
 import { Route as AiVideoGeneratorRouteImport } from './routes/ai-video-generator'
 import { Route as ApidotMediaRouteImport } from './routes/apidot-media'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BlankRouteImport } from './routes/blank'
 import { Route as CharacterSwapRouteImport } from './routes/character-swap'
 import { Route as ImageToVideoRouteImport } from './routes/image-to-video'
 import { Route as MultiSceneRouteImport } from './routes/multi-scene'
+import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as ApiPublicVideoProxyRouteImport } from './routes/api/public/video-proxy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AiImageRoute = AiImageRouteImport.update({
@@ -45,6 +53,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlankRoute = BlankRouteImport.update({
+  id: '/blank',
+  path: '/blank',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CharacterSwapRoute = CharacterSwapRouteImport.update({
   id: '/character-swap',
   path: '/character-swap',
@@ -60,6 +73,11 @@ const MultiSceneRoute = MultiSceneRouteImport.update({
   path: '/multi-scene',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentsRoute = PaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VoiceRoute = VoiceRouteImport.update({
   id: '/voice',
   path: '/voice',
@@ -73,38 +91,47 @@ const ApiPublicVideoProxyRoute = ApiPublicVideoProxyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/ai-image': typeof AiImageRoute
   '/ai-video-generator': typeof AiVideoGeneratorRoute
   '/apidot-media': typeof ApidotMediaRoute
   '/auth': typeof AuthRoute
+  '/blank': typeof BlankRoute
   '/character-swap': typeof CharacterSwapRoute
   '/image-to-video': typeof ImageToVideoRoute
   '/multi-scene': typeof MultiSceneRoute
+  '/payments': typeof PaymentsRoute
   '/voice': typeof VoiceRoute
   '/api/public/video-proxy': typeof ApiPublicVideoProxyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/ai-image': typeof AiImageRoute
   '/ai-video-generator': typeof AiVideoGeneratorRoute
   '/apidot-media': typeof ApidotMediaRoute
   '/auth': typeof AuthRoute
+  '/blank': typeof BlankRoute
   '/character-swap': typeof CharacterSwapRoute
   '/image-to-video': typeof ImageToVideoRoute
   '/multi-scene': typeof MultiSceneRoute
+  '/payments': typeof PaymentsRoute
   '/voice': typeof VoiceRoute
   '/api/public/video-proxy': typeof ApiPublicVideoProxyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/ai-image': typeof AiImageRoute
   '/ai-video-generator': typeof AiVideoGeneratorRoute
   '/apidot-media': typeof ApidotMediaRoute
   '/auth': typeof AuthRoute
+  '/blank': typeof BlankRoute
   '/character-swap': typeof CharacterSwapRoute
   '/image-to-video': typeof ImageToVideoRoute
   '/multi-scene': typeof MultiSceneRoute
+  '/payments': typeof PaymentsRoute
   '/voice': typeof VoiceRoute
   '/api/public/video-proxy': typeof ApiPublicVideoProxyRoute
 }
@@ -112,50 +139,62 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/ai-image'
     | '/ai-video-generator'
     | '/apidot-media'
     | '/auth'
+    | '/blank'
     | '/character-swap'
     | '/image-to-video'
     | '/multi-scene'
+    | '/payments'
     | '/voice'
     | '/api/public/video-proxy'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/ai-image'
     | '/ai-video-generator'
     | '/apidot-media'
     | '/auth'
+    | '/blank'
     | '/character-swap'
     | '/image-to-video'
     | '/multi-scene'
+    | '/payments'
     | '/voice'
     | '/api/public/video-proxy'
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/ai-image'
     | '/ai-video-generator'
     | '/apidot-media'
     | '/auth'
+    | '/blank'
     | '/character-swap'
     | '/image-to-video'
     | '/multi-scene'
+    | '/payments'
     | '/voice'
     | '/api/public/video-proxy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   AiImageRoute: typeof AiImageRoute
   AiVideoGeneratorRoute: typeof AiVideoGeneratorRoute
   ApidotMediaRoute: typeof ApidotMediaRoute
   AuthRoute: typeof AuthRoute
+  BlankRoute: typeof BlankRoute
   CharacterSwapRoute: typeof CharacterSwapRoute
   ImageToVideoRoute: typeof ImageToVideoRoute
   MultiSceneRoute: typeof MultiSceneRoute
+  PaymentsRoute: typeof PaymentsRoute
   VoiceRoute: typeof VoiceRoute
   ApiPublicVideoProxyRoute: typeof ApiPublicVideoProxyRoute
 }
@@ -167,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ai-image': {
@@ -197,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blank': {
+      id: '/blank'
+      path: '/blank'
+      fullPath: '/blank'
+      preLoaderRoute: typeof BlankRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/character-swap': {
       id: '/character-swap'
       path: '/character-swap'
@@ -218,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MultiSceneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payments': {
+      id: '/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof PaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/voice': {
       id: '/voice'
       path: '/voice'
@@ -237,13 +297,16 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   AiImageRoute: AiImageRoute,
   AiVideoGeneratorRoute: AiVideoGeneratorRoute,
   ApidotMediaRoute: ApidotMediaRoute,
   AuthRoute: AuthRoute,
+  BlankRoute: BlankRoute,
   CharacterSwapRoute: CharacterSwapRoute,
   ImageToVideoRoute: ImageToVideoRoute,
   MultiSceneRoute: MultiSceneRoute,
+  PaymentsRoute: PaymentsRoute,
   VoiceRoute: VoiceRoute,
   ApiPublicVideoProxyRoute: ApiPublicVideoProxyRoute,
 }
