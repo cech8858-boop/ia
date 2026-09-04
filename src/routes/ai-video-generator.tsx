@@ -44,6 +44,7 @@ function AiVideoGenerator() {
   const [resolution, setResolution] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [prompt, setPrompt] = useState("");
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "uploading" | "processing" | "completed">("idle");
@@ -229,6 +230,15 @@ function AiVideoGenerator() {
   });
 
   const busy = phase === "uploading" || phase === "processing";
+  const selectedModelName = family === "veo" ? "VEO3" : family === "sora" ? "SORA2" : "Kling Video";
+  const modelOptions = [
+    { name: "VEO3", family: "veo", position: "0% 0%" },
+    { name: "SORA2", family: "sora", position: "100% 0%" },
+    { name: "Motion Control", route: "/character-swap", position: "0% 50%" },
+    { name: "Kling Video", family: "kling", position: "100% 50%" },
+    { name: "WAN", route: "/", position: "0% 100%" },
+    { name: "Nano Banana", route: "/ai-image", position: "100% 100%" },
+  ] as const;
 
   function onPickImage(file: File | null) {
     if (!file) return;
@@ -310,14 +320,41 @@ function AiVideoGenerator() {
                 className="w-full resize-none rounded-[1.7rem] border border-white/10 bg-[#242424] px-5 py-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-violet-500"
               />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Choices
-                label=""
-                options={families}
-                value={family}
-                onChange={setFamily}
-                render={(f) => FAMILY_LABELS[f] ?? f}
-              />
+            <div className="relative flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setModelMenuOpen((open) => !open)}
+                aria-expanded={modelMenuOpen}
+                className="flex min-w-52 items-center justify-between gap-4 rounded-full bg-[#292929] px-3 py-2 text-left"
+              >
+                <span className="flex items-center gap-3">
+                  <ModelThumbnail position={modelOptions.find((option) => option.name === selectedModelName)?.position ?? "0% 0%"} />
+                  <span className="text-sm font-semibold">{selectedModelName}</span>
+                </span>
+                <span className="text-xl text-white/60">{modelMenuOpen ? "⌃" : "⌄"}</span>
+              </button>
+              {modelMenuOpen && (
+                <div className="absolute left-0 top-12 z-30 w-64 overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#171717] p-2 shadow-2xl">
+                  {modelOptions.map((option) => (
+                    <button
+                      key={option.name}
+                      type="button"
+                      onClick={() => {
+                        setModelMenuOpen(false);
+                        if ("family" in option) {
+                          setFamily(option.family);
+                          return;
+                        }
+                        navigate({ to: option.route });
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition hover:bg-white/10"
+                    >
+                      <ModelThumbnail position={option.position} />
+                      <span>{option.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex rounded-full bg-[#292929] p-1">
                 {["16:9", "9:16"].map((ratio) => (
                   <button key={ratio} type="button" onClick={() => setAspectRatio(ratio)} className={`rounded-full px-4 py-2 text-xs ${aspectRatio === ratio ? "bg-[#555] text-white" : "text-white/45"}`}>
@@ -478,5 +515,15 @@ function Choices<T extends string | number>({
         ))}
       </div>
     </div>
+  );
+}
+
+function ModelThumbnail({ position }: { position: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{ backgroundImage: "url(/tools-reference-1.png)", backgroundPosition: position }}
+      className="size-10 shrink-0 rounded-xl bg-[length:200%_300%] bg-no-repeat"
+    />
   );
 }
