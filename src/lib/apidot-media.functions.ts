@@ -31,6 +31,11 @@ export type Tripo3dOutput =
   | { status: "completed"; generationId: string; modelUrl: string }
   | { status: "error"; message: string };
 
+export type MeshyOutput =
+  | { status: "processing"; generationId: string }
+  | { status: "completed"; generationId: string; modelUrl: string }
+  | { status: "error"; message: string };
+
 export const generateNanoBanana = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { prompt: string; aspectRatio?: string }) => {
@@ -218,6 +223,44 @@ export const pollTripo3d = createServerFn({ method: "POST" })
     const result = await getTaskStatus(data.generationId);
     if (!result.ok) {
       return { status: "error", message: safeErrorMessage(result.body) ?? "Tripo3D task failed." };
+    }
+    const modelUrl = extractMediaUrl(result.body, ["glb", "gltf", "obj", "fbx", "model", "3d"]);
+    return modelUrl
+      ? { status: "completed", generationId: data.generationId, modelUrl }
+      : { status: "processing", generationId: data.generationId };
+  });
+
+export const generateMeshy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { prompt: string }) => {
+    const prompt = input?.prompt?.trim();
+    if (!prompt) throw new Error("Please provide a 3D model prompt.");
+    return { prompt };
+  })
+  .handler(async ({ data }): Promise<MeshyOutput> => {
+    const result = await submitGeneration("meshy-6-text-to-3d", { prompt: data.prompt });
+    if (!result.ok) {
+      return { status: "error", message: safeErrorMessage(result.body) ?? "Meshy generation failed." };
+    }
+    const modelUrl = extractMediaUrl(result.body, ["glb", "gltf", "obj", "fbx", "model", "3d"]);
+    if (modelUrl) return { status: "completed", generationId: "meshy-6-text-to-3d", modelUrl };
+    const taskId = extractTaskId(result.body);
+    return taskId
+      ? { status: "processing", generationId: taskId }
+      : { status: "error", message: "Meshy did not return a task id." };
+  });
+
+export const pollMeshy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { generationId: string }) => {
+    const id = input?.generationId?.trim();
+    if (!id) throw new Error("Missing generation id.");
+    return { generationId: id };
+  })
+  .handler(async ({ data }): Promise<MeshyOutput> => {
+    const result = await getTaskStatus(data.generationId);
+    if (!result.ok) {
+      return { status: "error", message: safeErrorMessage(result.body) ?? "Meshy task failed." };
     }
     const modelUrl = extractMediaUrl(result.body, ["glb", "gltf", "obj", "fbx", "model", "3d"]);
     return modelUrl

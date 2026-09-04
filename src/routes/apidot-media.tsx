@@ -6,10 +6,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   generateElevenLabs,
   generateElevenLabsMusic,
+  generateMeshy,
   generateNanoBanana,
   generateTripo3d,
   pollElevenLabs,
   pollElevenLabsMusic,
+  pollMeshy,
   pollNanoBanana,
   pollTripo3d,
 } from "@/lib/apidot-media.functions";
@@ -25,7 +27,7 @@ export const Route = createFileRoute("/apidot-media")({
 });
 
 function ApiDotMediaLab() {
-  const [tab, setTab] = useState<"nano-banana" | "elevenlabs" | "elevenlabs-music" | "tripo3d">("nano-banana");
+  const [tab, setTab] = useState<"nano-banana" | "elevenlabs" | "elevenlabs-music" | "tripo3d" | "meshy">("nano-banana");
   const [prompt, setPrompt] = useState("");
   const [text, setText] = useState("Hello world, this is a test from APIDot.");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -34,11 +36,14 @@ function ApiDotMediaLab() {
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [modelPrompt, setModelPrompt] = useState("");
   const [modelUrl, setModelUrl] = useState<string | null>(null);
+  const [meshyPrompt, setMeshyPrompt] = useState("");
+  const [meshyUrl, setMeshyUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nanoJobId, setNanoJobId] = useState<string | null>(null);
   const [elevenJobId, setElevenJobId] = useState<string | null>(null);
   const [musicJobId, setMusicJobId] = useState<string | null>(null);
   const [modelJobId, setModelJobId] = useState<string | null>(null);
+  const [meshyJobId, setMeshyJobId] = useState<string | null>(null);
 
   const runNano = useServerFn(generateNanoBanana);
   const pollNano = useServerFn(pollNanoBanana);
@@ -48,6 +53,8 @@ function ApiDotMediaLab() {
   const pollMusic = useServerFn(pollElevenLabsMusic);
   const runTripo = useServerFn(generateTripo3d);
   const pollTripo = useServerFn(pollTripo3d);
+  const runMeshy = useServerFn(generateMeshy);
+  const pollMeshyJob = useServerFn(pollMeshy);
 
   const nanoMutation = useMutation({
     mutationFn: async () => {
@@ -97,6 +104,18 @@ function ApiDotMediaLab() {
     onError: (err) => setError(err instanceof Error ? err.message : "Tripo3D failed."),
   });
 
+  const meshyMutation = useMutation({
+    mutationFn: async () => {
+      setError(null);
+      const result = await runMeshy({ data: { prompt: meshyPrompt } });
+      if (result.status === "error") throw new Error(result.message);
+      if (result.status === "processing") setMeshyJobId(result.generationId);
+      if (result.status === "completed") setMeshyUrl(result.modelUrl);
+      return result;
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : "Meshy failed."),
+  });
+
   const nanoPolling = useQuery({
     queryKey: ["apidot-nano", nanoJobId],
     queryFn: () => pollNano({ data: { generationId: nanoJobId! } }),
@@ -122,6 +141,13 @@ function ApiDotMediaLab() {
     queryKey: ["apidot-tripo3d", modelJobId],
     queryFn: () => pollTripo({ data: { generationId: modelJobId! } }),
     enabled: tab === "tripo3d" && Boolean(modelJobId),
+    refetchInterval: 5000,
+  });
+
+  const meshyPolling = useQuery({
+    queryKey: ["apidot-meshy", meshyJobId],
+    queryFn: () => pollMeshyJob({ data: { generationId: meshyJobId! } }),
+    enabled: tab === "meshy" && Boolean(meshyJobId),
     refetchInterval: 5000,
   });
 
@@ -159,13 +185,22 @@ function ApiDotMediaLab() {
       setError(tripoPolling.data.message);
       setModelJobId(null);
     }
-  }, [tab, nanoPolling.data, elevenPolling.data, musicPolling.data, tripoPolling.data]);
+    if (tab === "meshy" && meshyPolling.data?.status === "completed") {
+      setMeshyUrl(meshyPolling.data.modelUrl);
+      setMeshyJobId(null);
+    }
+    if (tab === "meshy" && meshyPolling.data?.status === "error") {
+      setError(meshyPolling.data.message);
+      setMeshyJobId(null);
+    }
+  }, [tab, nanoPolling.data, elevenPolling.data, musicPolling.data, tripoPolling.data, meshyPolling.data]);
 
   const isGenerating =
     (tab === "nano-banana" && (nanoMutation.isPending || (Boolean(nanoJobId) && nanoPolling.data?.status === "processing"))) ||
     (tab === "elevenlabs" && (elevenMutation.isPending || (Boolean(elevenJobId) && elevenPolling.data?.status === "processing"))) ||
     (tab === "elevenlabs-music" && (musicMutation.isPending || (Boolean(musicJobId) && musicPolling.data?.status === "processing"))) ||
     (tab === "tripo3d" && (tripoMutation.isPending || (Boolean(modelJobId) && tripoPolling.data?.status === "processing")));
+    (tab === "meshy" && (meshyMutation.isPending || (Boolean(meshyJobId) && meshyPolling.data?.status === "processing")));
 
   const currentError =
     error ||
@@ -177,6 +212,8 @@ function ApiDotMediaLab() {
     (tab === "tripo3d" && tripoMutation.error instanceof Error ? tripoMutation.error.message : null) ||
     (tab === "elevenlabs-music" && musicPolling.data?.status === "error" ? musicPolling.data.message : null) ||
     (tab === "tripo3d" && tripoPolling.data?.status === "error" ? tripoPolling.data.message : null);
+    (tab === "meshy" && meshyMutation.error instanceof Error ? meshyMutation.error.message : null) ||
+    (tab === "meshy" && meshyPolling.data?.status === "error" ? meshyPolling.data.message : null);
 
   return (
     <main className="min-h-screen bg-background p-6 text-foreground">
@@ -222,6 +259,15 @@ function ApiDotMediaLab() {
             }`}
           >
             Tripo3D
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("meshy")}
+            className={`rounded-xl px-4 py-2 text-sm font-medium ${
+              tab === "meshy" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+            }`}
+          >
+            Meshy 3D
           </button>
         </div>
 
@@ -314,7 +360,7 @@ function ApiDotMediaLab() {
                   </div>
                 )}
               </section>
-            ) : (
+            ) : tab === "tripo3d" ? (
               <section className="rounded-2xl border border-border bg-card p-5">
                 <label className="mb-2 block text-sm font-medium">3D model prompt</label>
                 <textarea
@@ -341,6 +387,37 @@ function ApiDotMediaLab() {
                   <div className="mt-6 rounded-xl border border-border p-4">
                     <a href={modelUrl} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
                       Download generated 3D model
+                    </a>
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="rounded-2xl border border-border bg-card p-5">
+                <label className="mb-2 block text-sm font-medium">Meshy 3D model prompt</label>
+                <textarea
+                  value={meshyPrompt}
+                  onChange={(e) => setMeshyPrompt(e.target.value)}
+                  rows={5}
+                  className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm"
+                  placeholder="A detailed fantasy castle floating above the clouds"
+                />
+                <button
+                  type="button"
+                  disabled={!meshyPrompt.trim() || isGenerating}
+                  onClick={() => {
+                    setError(null);
+                    setMeshyUrl(null);
+                    setMeshyJobId(null);
+                    meshyMutation.mutate();
+                  }}
+                  className="mt-4 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  {isGenerating ? "Generating…" : "Generate with Meshy"}
+                </button>
+                {meshyUrl && (
+                  <div className="mt-6 rounded-xl border border-border p-4">
+                    <a href={meshyUrl} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
+                      Download generated Meshy model
                     </a>
                   </div>
                 )}
